@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050505">
+    <title>FoodWise AI | Predict Demand. Reduce Waste.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow glow-a"></div>
+<div class="bg-glow glow-b"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <a class="brand" href="#top">
+        <div class="brand-icon">🧠</div>
+        <div>
+            <strong>FoodWise AI</strong>
+            <small>v2.0 Neural Engine</small>
+        </div>
+    </a>
+    <div class="nav-links">
+        <a href="#predict">Predict</a>
+        <a href="#impact">Impact</a>
+        <a href="#analytics">Analytics</a>
+    </div>
+    <div class="nav-actions-right" style="display: flex; gap: 12px; align-items: center;">
+        <button type="button" class="pos-sync-btn" id="posSyncBtn" onclick="syncCanteenPOS()">
+            <span>🔄 Sync Canteen POS</span>
+        </button>
+        <div class="status-pill"><span class="pulse-dot"></span> Model online</div>
+    </div>
+</nav>
+
+<main class="dashboard-wrapper" id="top">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">⚡ LIVE AI PREDICTION PIPELINE</div>
+        <h1>Predict Demand. <br><span id="typewriter"></span><span class="cursor">_</span></h1>
+        <p>A machine learning pipeline that forecasts canteen demand, flags surplus risk before food expires, and routes extra meals to nearby NGOs.</p>
+        <div class="hero-cta">
+            <a href="#predict" class="btn-primary">Run a prediction →</a>
+            <a href="#analytics" class="btn-ghost">View analytics</a>
+        </div>
+
+        <div class="pipeline">
+            <div class="pipe-step"><b>01</b><span>Input<br>stock &amp; context</span></div>
+            <div class="pipe-line"></div>
+            <div class="pipe-step"><b>02</b><span>Forecast<br>ML demand</span></div>
+            <div class="pipe-line"></div>
+            <div class="pipe-step"><b>03</b><span>Risk<br>surplus score</span></div>
+            <div class="pipe-line"></div>
+            <div class="pipe-step"><b>04</b><span>Act<br>route to NGO</span></div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats-bento">
+        <div class="bento-card stat">
+            <div class="stat-icon neon-cyan">📊</div>
+            <div class="stat-info">
+                <span>DATA RECORDS</span>
+                <h3 data-count>{{ total_records }}</h3>
+            </div>
+        </div>
+        <div class="bento-card stat">
+            <div class="stat-icon neon-green">🍽️</div>
+            <div class="stat-info">
+                <span>TOTAL QUANTITY</span>
+                <h3 data-count>{{ total_quantity }}</h3>
+            </div>
+        </div>
+        <div class="bento-card stat">
+            <div class="stat-icon neon-purple">🔮</div>
+            <div class="stat-info">
+                <span>AI DEMAND</span>
+                <h3 data-count>{{ total_demand }}</h3>
+            </div>
+        </div>
+        <div class="bento-card stat alert-border">
+            <div class="stat-icon neon-red">⚠️</div>
+            <div class="stat-info">
+                <span>HIGH RISK EVENTS</span>
+                <h3 class="text-red" data-count>{{ high_risk }}</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- PREDICTION ENGINE -->
+    <section class="section-head" id="predict">
+        <h2>Prediction Engine</h2>
+        <p>Enter today's stock details or load a scenario, then run the model.</p>
+    </section>
+
+    <section class="engine-bento">
+        <!-- INPUT -->
+        <div class="bento-card input-panel">
+            <div class="panel-header">
+                <h3><span class="pulse-dot"></span> Input Parameters</h3>
+            </div>
+
+            <div class="presets">
+                <span class="presets-label">Quick scenarios</span>
+                <button type="button" class="chip" data-preset="rush">🔥 Weekend rush</button>
+                <button type="button" class="chip" data-preset="expiry">⏳ Near expiry</button>
+                <button type="button" class="chip" data-preset="steady">✅ Steady weekday</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="input-group">
+                    <label for="product">Product &amp; State</label>
+                    <select id="product">
+                        <optgroup label="🔥 Cooked / Prepared Foods">
+                            <option value="Chicken (Cooked)">Prepared Chicken</option>
+                            <option value="Rice (Cooked)">Cooked Rice</option>
+                        </optgroup>
+                        <optgroup label="🌱 Uncooked / Raw Perishables &amp; Staples">
+                            <option value="Chicken">Raw Chicken</option>
+                            <option value="Milk">Raw Milk</option>
+                            <option value="Bread">Bread (Staple)</option>
+                            <option value="Banana">Banana (Produce)</option>
+                            <option value="Rice">Dry Rice (Staple)</option>
+                            <option value="Eggs">Eggs</option>
+                            <option value="Tomato">Tomato (Produce)</option>
+                            <option value="Apple">Apple (Produce)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="quantity">Quantity (units)</label>
+                    <input id="quantity" type="number" min="0" value="150">
+                </div>
+                <div class="input-group">
+                    <label for="price">Price (₹ / unit)</label>
+                    <input id="price" type="number" min="0" value="50">
+                </div>
+                <div class="input-group">
+                    <label for="expiry_days">Expiry in (days)</label>
+                    <input id="expiry_days" type="number" min="0" value="1">
+                </div>
+                <div class="input-group">
+                    <label for="temperature">Temperature (°C)</label>
+                    <input id="temperature" type="number" value="24">
+                </div>
+                <div class="input-group">
+                    <label for="day_of_week">Day of week</label>
+                    <select id="day_of_week">
+                        <option value="0">Monday</option><option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option><option value="3">Thursday</option>
+                        <option value="4">Friday</option><option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                    </select>
+                </div>
+            </div>
+
+            <label class="custom-checkbox">
+                <input type="checkbox" id="is_holiday">
+                <span class="checkmark"></span>
+                Semester End / Long Holiday Period
+            </label>
+
+            <label class="custom-checkbox">
+                <input type="checkbox" id="is_rush">
+                <span class="checkmark"></span>
+                🎉 Festival / Sudden Campus Rush (High Attendance)
+            </label>
+
+            <label class="custom-checkbox" style="margin-bottom: 24px;">
+                <input type="checkbox" id="sms_alerts" checked>
+                <span class="checkmark"></span>
+                📱 Enable Proactive Morning SMS Alerts (06:00 AM)
+            </label>
+
+            <button class="cyber-button" id="runBtn" type="button">
+                <span>RUN PREDICTION MODEL</span>
+                <div class="cyber-button-glare"></div>
+            </button>
+        </div>
+
+        <!-- OUTPUT -->
+        <div class="bento-card output-panel ai-border" id="outputPanel">
+            <div id="aiOverlay" class="ai-processing-overlay">
+                <div class="spinner"></div>
+                <p id="aiOverlayText">DECODING PATTERNS...</p>
+            </div>
+
+            <div class="panel-header flex-between">
+                <h3>AI Recommendation Plan</h3>
+                <div id="riskBadge" class="cyber-badge">AWAITING DATA</div>
+            </div>
+
+            <div class="result-top">
+                <div class="gauge-wrap">
+                    <svg class="gauge" viewBox="0 0 120 120" aria-label="Waste rate gauge">
+                        <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                        <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <strong id="percentageResult">0%</strong>
+                        <span>WASTE RATE</span>
+                    </div>
+                </div>
+
+                <div class="metric-stack">
+                    <div class="metric">
+                        <span>PREDICTED DEMAND</span>
+                        <strong id="demandResult">000</strong>
+                    </div>
+                    <div class="metric">
+                        <span>SURPLUS UNITS</span>
+                        <strong id="surplusResult">000</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="risk-meter" aria-hidden="true">
+                <div class="risk-seg" data-level="LOW"></div>
+                <div class="risk-seg" data-level="MEDIUM"></div>
+                <div class="risk-seg" data-level="HIGH"></div>
+            </div>
+
+            <div class="action-card" id="actionCard">
+                <span>⚡ REQUIRED ACTION</span>
+                <h4 id="actionResult">Input parameters to initialize.</h4>
+                <p id="recommendationResult">System ready for evaluation.</p>
+                <button id="ngoActionContainer" class="ngo-cyber-btn" type="button" style="display:none;">
+                    [ INITIATE NGO ROUTING ]
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMPACT -->
+    <section class="section-head" id="impact">
+        <h2>Impact &amp; Scaled Business ROI</h2>
+        <p>Projected financial savings and resource recovery metrics.</p>
+    </section>
+
+    <section class="impact-bento">
+        <div class="bento-card impact">
+            <span>VALUE AT RISK (THIS RUN)</span>
+            <strong id="impactValue">₹0</strong>
+            <small>surplus × unit price</small>
+        </div>
+        <div class="bento-card impact">
+            <span>ESTIMATED MONTHLY SAVINGS</span>
+            <strong id="monthlyRoi">₹30,000+</strong>
+            <small>based on ₹1,000/day waste prevention</small>
+        </div>
+        <div class="bento-card impact">
+            <span>MEALS RESCUED &amp; TIME</span>
+            <strong id="impactUnits">0 units</strong>
+            <small id="impactTime">Expires in —</small>
+        </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="bento-card history-card">
+        <div class="panel-header flex-between">
+            <h3>Session history</h3>
+            <button class="link-btn" id="clearHistory" type="button">Clear</button>
+        </div>
+        <div class="table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr><th>Time</th><th>Product</th><th>Stock</th><th>Demand</th><th>Surplus</th><th>Risk</th></tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr class="empty-row"><td colspan="6">No predictions yet. Run the model to see results here.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="section-head" id="analytics">
+        <h2>Analytics</h2>
+        <p>Historical demand patterns and risk distribution across the dataset.</p>
+    </section>
+
+    <section class="bento-card multi-year-card">
+        <div class="panel-header">
+            <h3>Multi-Year Historical Trend Analysis (Seasonal)</h3>
+        </div>
+        <p class="chart-desc">Plots historical canteen demand patterns over multi-year periods. Sharp mid-year and year-end troughs explicitly correlate with semester-end holidays and term breaks.</p>
+        <div class="chart-box full-width-chart"><canvas id="multiYearChart"></canvas></div>
+    </section>
+
+    <section class="analytics-bento" style="margin-top:20px;">
+        <div class="bento-card chart-container">
+            <h3>Demand by product</h3>
+            <p class="chart-desc">Visualizes historical average units requested per item.</p>
+            <div class="chart-box"><canvas id="productDemandChart"></canvas></div>
+        </div>
+        <div class="bento-card chart-container">
+            <h3>Risk probability</h3>
+            <p class="chart-desc">Historical breakdown of waste alerts across inventory.</p>
+            <div class="chart-box"><canvas id="riskChart"></canvas></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <span>FoodWise AI · Built for zero food waste</span>
+        <span>Forecast → Risk → Rescue</span>
+    </footer>
+</main>
+
+<!-- NGO MODAL -->
+<div id="ngoModal" class="cyber-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="ngoTitle">
+    <div class="cyber-modal">
+        <div class="modal-header flex-between">
+            <h3 id="ngoTitle">ACTIVE NGO NETWORK</h3>
+            <button class="close-btn" id="ngoClose" type="button" aria-label="Close">[X]</button>
+        </div>
+        <p class="modal-text" id="ngoSummary">Live routing to zero-hunger partners.</p>
+        
+        <div class="porter-notice">
+            <span>🚚</span> Verified partner logistics. Instant dispatch and safe food transit secured via <strong style="color:#fff;">Porter Logistics Partner Network</strong>.
+        </div>
+
+        <div class="ngo-list">
+            <div class="ngo-row active-ngo">
+                <div class="ngo-details">
+                    <h4>Hope Foundation <span class="dist">2.5 km</span></h4>
+                    <p>Needs: Cooked food, staples.</p>
+                </div>
+                <div class="ngo-actions">
+                    <a href="tel:+919876543210" class="contact-link phone-link">📞 CALL</a>
+                    <a href="sms:+919876543210" class="contact-link sms-link" data-ngo="Hope Foundation">💬 SMS</a>
+                    <a href="mailto:donate@hopefoundation.org" class="contact-link email-link" data-ngo="Hope Foundation">✉️ EMAIL</a>
+                </div>
+            </div>
+
+            <div class="ngo-row offline-ngo">
+                <div class="ngo-details">
+                    <h4>Food Shelter <span class="dist">4.1 km</span></h4>
+                    <p>Capacity reached for today.</p>
+                </div>
+                <div class="ngo-actions">
+                    <button class="contact-link disabled" disabled>OFFLINE</button>
+                </div>
+            </div>
+
+            <div class="ngo-row active-ngo">
+                <div class="ngo-details">
+                    <h4>City Care Trust <span class="dist">5.8 km</span></h4>
+                    <p>Needs: Milk, eggs, bread.</p>
+                </div>
+                <div class="ngo-actions">
+                    <a href="tel:+919988776655" class="contact-link phone-link">📞 CALL</a>
+                    <a href="sms:+919988776655" class="contact-link sms-link" data-ngo="City Care Trust">💬 SMS</a>
+                    <a href="mailto:hello@citycaretrust.org" class="contact-link email-link" data-ngo="City Care Trust">✉️ EMAIL</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
